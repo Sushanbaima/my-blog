@@ -877,8 +877,9 @@
             </div>
         </div>
 
+        <!-- 修正：去掉piano-songs/前缀 -->
         <audio id="bgMusic" preload="metadata" loop>
-            <source src="piano-songs/飞侠Shrimp - Terrasphere 钢琴版.mp3" type="audio/mpeg">
+            <source src="飞侠Shrimp - Terrasphere 钢琴版.mp3" type="audio/mpeg">
         </audio>
 
         <div class="controls">
@@ -1138,10 +1139,11 @@
                 });
             }
 
+            // 修正：去掉piano-songs/前缀，注释掉未上传的曲目
             const playlist = [
-                { name: "Terrasphere", src: "piano-songs/飞侠Shrimp - Terrasphere 钢琴版.mp3" },
-                { name: "Moonlight Sonata", src: "piano-songs/beethoven - moonlight sonata.mp3" },
-                { name: "Twinkle Twinkle Little Star", src: "piano-songs/mozart - twinkle twinkle little star.mp3" }
+                { name: "Terrasphere", src: "飞侠Shrimp - Terrasphere 钢琴版.mp3" },
+                // { name: "Moonlight Sonata", src: "beethoven - moonlight sonata.mp3" },
+                // { name: "Twinkle Twinkle Little Star", src: "mozart - twinkle twinkle little star.mp3" }
             ];
 
             let currentTrackIndex = 0;
