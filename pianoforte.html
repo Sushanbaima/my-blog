@@ -963,7 +963,7 @@
         </div>
     </div>
 
-    <!-- ✅ 完整音频标签（路径与GitHub仓库匹配） -->
+    <!-- 仅修复：音频标签完整闭合，路径正确 -->
     <audio id="bgMusic" preload="metadata" loop>
         <source src="飞侠Shrimp - Terrasphere 钢琴版.mp3" type="audio/mpeg">
     
@@ -1148,6 +1148,7 @@
         });
     }
 
+    // 仅修复：播放暂停逻辑
     function togglePlay() {
         if (bgMusic.paused) {
             initAudioContext();
