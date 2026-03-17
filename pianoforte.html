@@ -979,7 +979,7 @@
 
         <!-- 音频路径：piano-songs/ 文件夹下 -->
         <audio id="bgMusic" preload="metadata" loop>
-            <source src="飞侠Shrimp - Terrasphere 钢琴版.mp3" type="audio/mpeg">
+            <source src="piano-songs/飞侠Shrimp - Terrasphere 钢琴版.mp3" type="audio/mpeg">
         </audio>
 
         <div class="controls">
@@ -1105,23 +1105,49 @@
             
             createGiftParticles();
 
-            function startRandomBlinking() {
-                const keys = document.querySelectorAll('.white-key, .black-key');
-                keys.forEach(k => k.classList.remove('active'));
+            // --- 新增：控制键盘跳动和随机闪烁的全局变量 ---
+            let keysInteractive = true;       // 用户主动点击/按键是否生效
+            let blinkingActive = true;        // 随机闪烁是否允许进行
+            let blinkTimeouts = [];            // 存储所有随机闪烁的timeout ID，便于清除
 
+            // 清除所有随机闪烁定时器并移除active类
+            function stopAllBlinking() {
+                blinkTimeouts.forEach(id => clearTimeout(id));
+                blinkTimeouts = [];
+                document.querySelectorAll('.white-key, .black-key').forEach(k => k.classList.remove('active'));
+            }
+
+            // 重写 startRandomBlinking 使其受 blinkingActive 控制，并记录timeout
+            function startRandomBlinking() {
+                // 先清除之前的闪烁，避免重复启动
+                stopAllBlinking();
+                if (!blinkingActive) return; // 如果当前不允许闪烁，就不启动
+
+                const keys = document.querySelectorAll('.white-key, .black-key');
                 keys.forEach(key => {
-                    function blink() {
-                        const nextDelay = Math.random() * 4400 + 600; 
-                        setTimeout(() => {
+                    // 使用递归setTimeout实现每个键的独立随机闪烁
+                    function scheduleBlink() {
+                        if (!blinkingActive) return; // 如果全局闪烁被关闭，不再安排新的闪烁
+                        const nextDelay = Math.random() * 4400 + 600;
+                        const timeoutId = setTimeout(() => {
+                            if (!blinkingActive) return; // 执行前再检查一次
                             key.classList.add('active');
                             const glowDuration = Math.random() * 250 + 100;
-                            setTimeout(() => {
-                                key.classList.remove('active');
-                                blink();
+                            const removeTimeout = setTimeout(() => {
+                                if (blinkingActive) { // 移除active只在活跃时执行（但即使不活跃也可以移除，为了界面干净）
+                                    key.classList.remove('active');
+                                } else {
+                                    key.classList.remove('active'); // 强制移除
+                                }
                             }, glowDuration);
+                            // 将移除的timeout也记录下来（可选，但为了完整清除，可以记录）
+                            blinkTimeouts.push(removeTimeout);
+                            // 继续下一次闪烁
+                            scheduleBlink();
                         }, nextDelay);
+                        blinkTimeouts.push(timeoutId);
                     }
-                    blink();
+                    scheduleBlink();
                 });
             }
 
@@ -1251,6 +1277,9 @@
                         
                         // 琴键动画，完成后启动随机闪烁
                         animateKeysFromBottom(() => {
+                            // 此时音乐还未播放，但闪烁应该开始（因为音乐马上会播放）
+                            // 但为了统一，我们让闪烁开始，但随后togglePlay可能会调整状态
+                            // 注意：此时音乐还未播放，但用户还没有点击播放，所以我们先设置blinkingActive为true？实际后面会调用togglePlay播放音乐，所以没问题
                             startRandomBlinking();
                         });
 
@@ -1432,7 +1461,7 @@
             }
 
             const playlist = [
-                { name: "Terrasphere", src: "飞侠Shrimp - Terrasphere 钢琴版.mp3" },
+                { name: "Terrasphere", src: "piano-songs/飞侠Shrimp - Terrasphere 钢琴版.mp3" },
             ];
 
             let currentTrackIndex = 0;
@@ -1452,16 +1481,23 @@
 
             if (playlist.length > 0) loadTrack(0);
 
+            // 修改 togglePlay 函数，控制交互状态和随机闪烁
             function togglePlay() {
                 if (audio.paused) {
                     audio.play().then(() => {
                         playIcon.className = 'fas fa-pause';
+                        keysInteractive = true;
+                        blinkingActive = true;
+                        startRandomBlinking(); // 重新启动随机闪烁
                     }).catch(e => {
                         alert('无法播放音频，请检查文件路径。\n\n' + e.message);
                     });
                 } else {
                     audio.pause();
                     playIcon.className = 'fas fa-play';
+                    keysInteractive = false;
+                    blinkingActive = false;
+                    stopAllBlinking(); // 停止所有闪烁并移除active类
                 }
             }
 
@@ -1470,8 +1506,12 @@
             audio.addEventListener('ended', () => {
                 currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
                 loadTrack(currentTrackIndex);
-                audio.play().catch(() => {});
-                playIcon.className = 'fas fa-pause';
+                audio.play().then(() => {
+                    playIcon.className = 'fas fa-pause';
+                    keysInteractive = true;
+                    blinkingActive = true;
+                    startRandomBlinking(); // 新歌曲播放时重启闪烁
+                }).catch(() => {});
             });
 
             volumeControl.addEventListener('input', (e) => {
@@ -1497,6 +1537,7 @@
 
             keys.forEach(key => {
                 key.addEventListener('click', function() {
+                    if (!keysInteractive) return; // 暂停状态下禁止跳动
                     playKeyNote(this);
                     if (audio.paused) togglePlay();
                 });
@@ -1506,8 +1547,11 @@
                 if (e.code === 'Space') {
                     e.preventDefault();
                     togglePlay();
+                    return;
                 }
                 
+                if (!keysInteractive) return; // 暂停状态下禁止键盘触发跳动
+
                 const keyMap = {
                     KeyA: document.querySelector('[data-note="c4"]'),
                     KeyW: document.querySelector('[data-note="c#4"]'),
@@ -1602,6 +1646,7 @@
                         twinkleSpeed: Math.random() * 0.02 + 0.005,
                         twinklePhase: Math.random() * Math.PI * 2,
                         color: `hsl(${200 + Math.random() * 60}, 70%, ${70 + Math.random() * 30}%)`
+                        
                     });
                 }
             }
@@ -1611,6 +1656,7 @@
 
             function drawAuroraAndStars() {
                 ctx.clearRect(0, 0, width, height);
+
 
                 // 绘制背景星星
                 for (let s of stars) {
@@ -1689,7 +1735,7 @@
                 // 连线：很细，半透明，带轻微发光
                 ctx.shadowColor = '#aac0ff';
                 ctx.shadowBlur = 18;
-                ctx.strokeStyle = 'rgba(170, 200, 255, 0.5)';   // 蓝紫色半透明
+                ctx.strokeStyle = 'rgba(170, 200, 255, 1.0)';   // 更亮
                 ctx.lineWidth = 1.8;                             // 较细连线，不突兀
                 turtleConnections.forEach(pair => {
                     const a = turtleStars[pair[0]];
@@ -1707,7 +1753,7 @@
                     ctx.shadowBlur = 28 * twinkle;
                     ctx.beginPath();
                     ctx.arc(star.x * width, star.y * height, star.size * 1.0 * (0.9 + 0.1 * Math.sin(time*2+star.x*8)), 0, Math.PI*2);
-                    ctx.fillStyle = `rgba(210, 220, 255, ${0.7 * twinkle})`;   // 淡蓝紫色
+                    ctx.fillStyle = `rgba(210, 220, 255, ${1.0 * twinkle})`;   // 更亮
                     ctx.fill();
                     
                     // 内核 (偏白，带一点蓝)
