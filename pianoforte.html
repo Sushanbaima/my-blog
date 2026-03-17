@@ -1735,7 +1735,7 @@
                 // 连线：很细，半透明，带轻微发光
                 ctx.shadowColor = '#aac0ff';
                 ctx.shadowBlur = 18;
-                ctx.strokeStyle = 'rgba(170, 200, 255, 1.0)';   // 更亮
+                ctx.strokeStyle = 'rgba(170, 200, 255, 0.8)';   // 更亮
                 ctx.lineWidth = 1.8;                             // 较细连线，不突兀
                 turtleConnections.forEach(pair => {
                     const a = turtleStars[pair[0]];
@@ -1753,7 +1753,7 @@
                     ctx.shadowBlur = 28 * twinkle;
                     ctx.beginPath();
                     ctx.arc(star.x * width, star.y * height, star.size * 1.0 * (0.9 + 0.1 * Math.sin(time*2+star.x*8)), 0, Math.PI*2);
-                    ctx.fillStyle = `rgba(210, 220, 255, ${1.0 * twinkle})`;   // 更亮
+                    ctx.fillStyle = `rgba(210, 220, 255, ${0.9 * twinkle})`;   // 更亮
                     ctx.fill();
                     
                     // 内核 (偏白，带一点蓝)
